@@ -1,13 +1,14 @@
-version: "3.9"
 services:
   backend:
-    build: ./backend
+    build:
+      context: ./backend  # Путь до папки backend относительно корня проекта
     ports:
       - "8000:8000"
     depends_on:
       - mysql
     environment:
-      - DATABASE_URL=mysql://root:password@mysql/db_name
+      - SQLALCHEMY_DATABASE_URL=mysql://root:meowmeow@mysql:3306/assistantsheduler
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
   frontend:
     build: ./frontend
@@ -19,7 +20,16 @@ services:
   mysql:
     image: mysql:5.7
     environment:
-      MYSQL_ROOT_PASSWORD: password
-      MYSQL_DATABASE: db_name
+      MYSQL_ROOT_PASSWORD: meowmeow
+      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+      MYSQL_DATABASE: assistantsheduler
     ports:
       - "3306:3306"
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 10s

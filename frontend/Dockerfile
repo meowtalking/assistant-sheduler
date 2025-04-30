@@ -1,15 +1,18 @@
-# Используем Node.js 16
+# Используем Node.js для фронтенда
 FROM node:16
 
 # Устанавливаем рабочую директорию
-WORKDIR /app
+WORKDIR /frontend
 
-# Копируем зависимости и устанавливаем их
-COPY frontend/package.json frontend/package-lock.json ./
+# Копируем package.json и устанавливаем зависимости
+COPY package.json /frontend/
 RUN npm install
 
-# Копируем весь проект
-COPY frontend/ .
+# Копируем все остальные файлы
+COPY . /frontend/
 
-# Запускаем React приложение
+# Указываем порт, на котором будет работать приложение
+EXPOSE 3000
+
+# Запускаем приложение
 CMD ["npm", "start"]

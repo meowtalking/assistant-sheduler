@@ -1,4 +1,12 @@
-from .models import engine, Base
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.declarative import declarative_base
 
-def init_db():
-    Base.metadata.create_all(bind=engine)
+#SQLALCHEMY_DATABASE_URL = "mysql://root:meowmeow@mysql:3306/assistantsheduler"
+
+SQLALCHEMY_DATABASE_URL = "mysql+pymysql://root:meowmeow@mysql:3306/assistantsheduler"
+
+
+engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"host": "localhost"})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+Base = declarative_base()

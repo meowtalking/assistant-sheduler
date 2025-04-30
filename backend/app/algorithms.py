@@ -1,4 +1,4 @@
-from models import Employee, Request
+from app.models import Employee, Request
 
 def assign_employees(request: Request, employees: list[Employee]):
     required_employees = 1 if request.passenger_type == "слабовидящий" else 2

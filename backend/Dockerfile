@@ -2,14 +2,15 @@
 FROM python:3.9
 
 # Устанавливаем рабочую директорию
-WORKDIR /app
+WORKDIR /backend/app
 
 # Копируем зависимости и устанавливаем их
-COPY backend/requirements.txt /app/
+COPY requirements.txt /backend/app/
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install uvicorn
 
 # Копируем весь проект в рабочую директорию
-COPY backend /app/
+COPY . /backend/app/
 
 # Запуск FastAPI
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
