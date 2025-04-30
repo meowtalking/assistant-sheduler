@@ -7,9 +7,8 @@ services:
     depends_on:
       - mysql
     environment:
-      - SQLALCHEMY_DATABASE_URL=mysql://root:meowmeow@mysql:3306/assistantsheduler
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
-
+      - SQLALCHEMY_DATABASE_URL=mysql://assistant_user:meowing@mysql:3306/assistantsheduler
+    command: ["/backend/wait-for-it.sh", "mysql:3306", "--", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
   frontend:
     build: ./frontend
     ports:
@@ -21,10 +20,11 @@ services:
     image: mysql:5.7
     environment:
       MYSQL_ROOT_PASSWORD: meowmeow
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
       MYSQL_DATABASE: assistantsheduler
+      MYSQL_USER: assistant_user
+      MYSQL_PASSWORD: meowing
     ports:
-      - "3306:3306"
+      - "3308:3306"
     volumes:
       - ./mysql-data:/var/lib/mysql
     healthcheck:
