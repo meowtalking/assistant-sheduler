@@ -3,3 +3,7 @@ uvicorn==0.34.2
 celery[redis]
 sqlalchemy
 pymysql
+python-jose
+jwt
+passlib
+python-multipart

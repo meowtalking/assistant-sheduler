@@ -4,6 +4,7 @@ from typing import Optional
 from passlib.context import CryptContext
 from app.models import User
 from app.database import SessionLocal
+from sqlalchemy.orm import Session
 
 SECRET_KEY = "your_secret_key"
 ALGORITHM = "HS256"

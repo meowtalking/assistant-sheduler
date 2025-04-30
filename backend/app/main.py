@@ -5,20 +5,44 @@ from app.algorithms import assign_employees
 from app.database import SessionLocal
 
 from fastapi import WebSocket, WebSocketDisconnect
-from fastapi import FastAPI, Depends
-from sqlalchemy.orm import Session
 from app.models import Request
 from app.schemas import RequestSchema
 from app.dependencies import get_db
 from typing import List
+from fastapi import FastAPI, Depends, HTTPException
+from . import models, database, schemas, auth, dependencies
+from sqlalchemy.orm import Session
 
 app = FastAPI()
+app.include_router(auth.router)
+
+models.Base.metadata.create_all(bind=database.engine)
+
+
+@app.post("/requests", tags=["requests"])
+def create_request(request: schemas.RequestCreate, db: Session = Depends(dependencies.get_db),
+                   current_user=Depends(dependencies.get_current_user)):
+    if not current_user.is_disabled:
+        raise HTTPException(status_code=403,
+                            detail="Заявки может подавать только пользователь с ограниченными возможностями")
+
+    new_request = models.Request(
+        user_id=current_user.id,
+        departure_station=request.departure_station,
+        arrival_station=request.arrival_station,
+        departure_time=request.departure_time,
+    )
+    db.add(new_request)
+    db.commit()
+    db.refresh(new_request)
+    return {"message": "Заявка подана", "request_id": new_request.id}
+
 
 @app.get("/api/requests", response_model=List[RequestSchema])
 def get_requests(db: Session = Depends(get_db)):
     return db.query(Request).all()
 
-app = FastAPI()
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -63,10 +87,3 @@ def get_schedule():
         {"id": 2, "name": "Мария Петрова", "shift_time": "10:00-19:00"}
     ]
 
-@app.get("/api/requests")
-def get_requests():
-    # Пример данных
-    return [
-        {"id": 1, "passenger_type": "VIP", "departure_station": "A", "arrival_station": "B", "status": "Pending"},
-        {"id": 2, "passenger_type": "Regular", "departure_station": "C", "arrival_station": "D", "status": "Completed"}
-    ]
