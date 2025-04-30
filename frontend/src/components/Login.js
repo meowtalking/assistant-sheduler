@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 
 const Login = ({ onLogin }) => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
 
@@ -25,8 +25,8 @@ const Login = ({ onLogin }) => {
   return (
     <div>
       <h2>Вход</h2>
-      <input type="email" placeholder="Email" value={email}
-             onChange={(e) => setEmail(e.target.value)} /><br />
+      <input type="username" placeholder="Email" value={username}
+             onChange={(e) => setUsername(e.target.value)} /><br />
       <input type="password" placeholder="Пароль" value={password}
              onChange={(e) => setPassword(e.target.value)} /><br />
       <button onClick={handleLogin}>Войти</button>

@@ -4,10 +4,10 @@
   "description": "Frontend for the assistant scheduler",
   "main": "src/index.js",
   "scripts": {
-    "start": "src/node_modules/.bin/react-scripts start",
-    "build": "src/node_modules/.bin/react-scripts build",
-    "test": "src/node_modules/.bin/react-scripts test",
-    "eject": "src/node_modules/.bin/react-scripts eject"
+  "start": "react-scripts start",
+  "build": "react-scripts build",
+  "test": "react-scripts test",
+  "eject": "react-scripts eject"
   },
   "dependencies": {
     "react": "^17.0.2",

@@ -7,3 +7,4 @@ python-jose
 jwt
 passlib
 python-multipart
+email-validator

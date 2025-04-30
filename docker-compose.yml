@@ -7,8 +7,13 @@ services:
     depends_on:
       - mysql
     environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=assistantsheduler
+      - DB_USER=assistant_user
+      - DB_PASSWORD=meowing
       - SQLALCHEMY_DATABASE_URL=mysql://assistant_user:meowing@mysql:3306/assistantsheduler
-    command: ["/backend/wait-for-it.sh", "mysql:3306", "--", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
   frontend:
     build: ./frontend
     ports:
@@ -19,7 +24,6 @@ services:
   mysql:
     image: mysql:5.7
     environment:
-      MYSQL_ROOT_PASSWORD: meowmeow
       MYSQL_DATABASE: assistantsheduler
       MYSQL_USER: assistant_user
       MYSQL_PASSWORD: meowing
@@ -28,8 +32,11 @@ services:
     volumes:
       - ./mysql-data:/var/lib/mysql
     healthcheck:
-      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      test: [ "CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "assistant_user", "-pmeowing" ]
       interval: 10s
       retries: 5
       start_period: 30s
       timeout: 10s
+networks:
+  your_network:
+    driver: bridge

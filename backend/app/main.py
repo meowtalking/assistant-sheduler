@@ -1,8 +1,8 @@
-from fastapi import HTTPException
 from app.models import Request, Employee
 from app.schemas import RequestOut  # Предположим, что у тебя есть Pydantic схемы
 from app.algorithms import assign_employees
 from app.database import SessionLocal
+
 
 from fastapi import WebSocket, WebSocketDisconnect
 from app.models import Request
@@ -10,7 +10,9 @@ from app.schemas import RequestSchema
 from app.dependencies import get_db
 from typing import List
 from fastapi import FastAPI, Depends, HTTPException
-from . import models, database, schemas, auth, dependencies
+from starlette.middleware.cors import CORSMiddleware
+
+from . import models, database, schemas, auth, dependencies, auth
 from sqlalchemy.orm import Session
 
 app = FastAPI()
@@ -86,4 +88,14 @@ def get_schedule():
         {"id": 1, "name": "Иван Иванов", "shift_time": "09:00-18:00"},
         {"id": 2, "name": "Мария Петрова", "shift_time": "10:00-19:00"}
     ]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # Для разработки можно оставить "*", но на проде — лучше указать конкретные адреса
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
+# Подключаем роутеры
+
+#app.include_router(requests.router)

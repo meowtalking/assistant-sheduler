@@ -12,7 +12,7 @@ from . import models, schemas, database
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 SECRET_KEY = "your_secret_key"

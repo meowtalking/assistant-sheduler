@@ -13,20 +13,32 @@ SQLALCHEMY_DATABASE_URL = "mysql://assistant_user:meowing@mysql:3306/assistantsh
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-Base = declarative_base()
+
+
+from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
+from sqlalchemy.orm import relationship
+from app.database import Base
+
+class Role(Base):
+    __tablename__ = "roles"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True)
+
+    users = relationship("User", back_populates="role")
 
 
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True, index=True)
-    username = Column(String(100), unique=True, index=True)
-    hashed_password = Column(String(255))
-    is_admin = Column(Boolean, default=False)
+    username = Column(String, unique=True, index=True)
+    password = Column(String)
     is_disabled = Column(Boolean, default=False)
+    role_id = Column(Integer, ForeignKey("roles.id"))  # <- Обязательный внешний ключ!
 
+    role = relationship("Role", back_populates="users")
     requests = relationship("Request", back_populates="user")
-
 class Request(Base):
     __tablename__ = "requests"
 
@@ -39,13 +51,6 @@ class Request(Base):
 
     user = relationship("User", back_populates="requests")
 
-class Role(Base):
-    __tablename__ = 'roles'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String(50), unique=True, nullable=False)
-
-    users = relationship("User", back_populates="role")
 
 class Employee(Base):
     __tablename__ = 'employees'
