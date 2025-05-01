@@ -33,8 +33,7 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True)
-    password = Column(String)
-    is_disabled = Column(Boolean, default=False)
+    hashed_password = Column(String)
     role_id = Column(Integer, ForeignKey("roles.id"))  # <- Обязательный внешний ключ!
 
     role = relationship("Role", back_populates="users")

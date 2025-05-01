@@ -10,7 +10,7 @@ const Register = () => {
     const response = await fetch('http://localhost:8000/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password, is_disabled: isDisabled }),
+      body: JSON.stringify({ username, password }),
     });
 
     const data = await response.json();
@@ -20,16 +20,29 @@ const Register = () => {
   return (
     <div>
       <h2>Регистрация</h2>
-      <input type="username" placeholder="Email" value={username}
-             onChange={(e) => setUsername(e.target.value)} /><br />
-      <input type="password" placeholder="Пароль" value={password}
-             onChange={(e) => setPassword(e.target.value)} /><br />
+      <input
+        type="email"
+        placeholder="Email"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+      /><br />
+      <input
+        type="password"
+        placeholder="Пароль"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      /><br />
       <label>
-        <input type="checkbox" checked={isDisabled}
-               onChange={() => setIsDisabled(!isDisabled)} />
-        Я нуждаюсь в сопровождении (инвалид)
+        <input
+          type="checkbox"
+          checked={isDisabled}
+          onChange={() => setIsDisabled(!isDisabled)}
+        />
+        Я подтверждаю, что являюсь инвалидом и нуждаюсь в сопровождении
       </label><br />
-      <button onClick={handleRegister}>Зарегистрироваться</button>
+      <button onClick={handleRegister} disabled={!isDisabled}>
+        Зарегистрироваться
+      </button>
       <p>{message}</p>
     </div>
   );

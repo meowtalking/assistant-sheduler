@@ -5,7 +5,6 @@ from datetime import datetime
 class UserCreate(BaseModel):
     username: str
     password: str
-    is_disabled: bool = False
 
 class UserLogin(BaseModel):
     username: str
