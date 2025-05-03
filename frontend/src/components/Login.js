@@ -16,7 +16,7 @@ const Login = ({ onLogin }) => {
 
     if (response.ok) {
       setMessage(data.message);
-      onLogin(data); // передаём данные наверх
+      onLogin({user_id: data.user_id, is_admin: data.is_admin }); // передаём данные наверх
     } else {
       setMessage(data.detail);
     }

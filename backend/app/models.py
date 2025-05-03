@@ -42,14 +42,16 @@ class Request(Base):
     __tablename__ = "requests"
 
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    departure_station = Column(String(100))
-    arrival_station = Column(String(100))
-    departure_time = Column(DateTime)
-    status = Column(String(50), default="Ожидает")
+    passenger_type = Column(String(50), nullable=True)
+    departure_station = Column(String(100), nullable=False)
+    arrival_station = Column(String(100), nullable=False)
+    departure_time = Column(DateTime, nullable=False)
+    status = Column(String(50), default="pending")
+    luggage = Column(Boolean, nullable=True)
+    assigned_employee_ids = Column(String(255), nullable=True)
 
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     user = relationship("User", back_populates="requests")
-
 
 class Employee(Base):
     __tablename__ = 'employees'

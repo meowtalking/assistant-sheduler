@@ -1,65 +1,107 @@
 import React, { useState } from 'react';
 
 const RequestForm = ({ userId }) => {
-  const [departureStation, setDepartureStation] = useState('');
-  const [arrivalStation, setArrivalStation] = useState('');
-  const [departureTime, setDepartureTime] = useState('');
-  const [passengerType, setPassengerType] = useState('инвалид');
-  const [luggage, setLuggage] = useState(false);
+  const [form, setForm] = useState({
+    passenger_type: '',
+    departure_station: '',
+    arrival_station: '',
+    departure_time: '', // формат: YYYY-MM-DDTHH:MM
+    luggage: false,
+  });
+
   const [message, setMessage] = useState('');
 
-  const handleSubmit = async () => {
-    const response = await fetch('http://localhost:8000/requests', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id: userId,
-        departure_station: departureStation,
-        arrival_station: arrivalStation,
-        departure_time: departureTime,
-        passenger_type: passengerType,
-        luggage,
-      }),
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setForm({
+      ...form,
+      [name]: type === 'checkbox' ? checked : value,
     });
+  };
 
-    const data = await response.json();
-    setMessage(data.message || data.detail);
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // Проверка обязательных полей
+    if (!form.passenger_type || !form.departure_station || !form.arrival_station || !form.departure_time) {
+      setMessage('Пожалуйста, заполните все обязательные поля!');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:8000/request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          passenger_type: form.passenger_type,
+          departure_station: form.departure_station,
+          arrival_station: form.arrival_station,
+          departure_time: form.departure_time,
+          luggage: form.luggage ? 1 : 0, // Преобразуем в 1/0 для базы данных
+        }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setMessage('Заявка успешно отправлена!');
+        setForm({
+          passenger_type: '',
+          departure_station: '',
+          arrival_station: '',
+          departure_time: '',
+          luggage: false,
+        });
+      } else {
+        setMessage(data.detail || 'Ошибка при отправке');
+      }
+    } catch (error) {
+      setMessage('Произошла ошибка при отправке заявки');
+      console.error(error);
+    }
   };
 
   return (
     <div>
-      <h2>Подать заявку на сопровождение</h2>
+      <h3>Новая заявка</h3>
+      <select name="passenger_type" onChange={handleChange} value={form.passenger_type}>
+        <option value="">Выберите тип пассажира</option>
+        <option value="blind">Слабовидящий</option>
+        <option value="blind_with_baggage">Слабовидящий с багажом</option>
+        <option value="wheelchair">Коляска</option>
+      </select><br />
+
       <input
-        type="text"
+        name="departure_station"
         placeholder="Станция отправления"
-        value={departureStation}
-        onChange={(e) => setDepartureStation(e.target.value)}
+        onChange={handleChange}
+        value={form.departure_station}
       /><br />
+
       <input
-        type="text"
-        placeholder="Станция прибытия"
-        value={arrivalStation}
-        onChange={(e) => setArrivalStation(e.target.value)}
+        name="arrival_station"
+        placeholder="Станция назначения"
+        onChange={handleChange}
+        value={form.arrival_station}
       /><br />
+
       <input
         type="datetime-local"
-        value={departureTime}
-        onChange={(e) => setDepartureTime(e.target.value)}
+        name="departure_time"
+        onChange={handleChange}
+        value={form.departure_time}
       /><br />
-      <select value={passengerType} onChange={(e) => setPassengerType(e.target.value)}>
-        <option value="инвалид">Инвалид</option>
-        <option value="пожилой">Пожилой</option>
-        <option value="беременная">Беременная</option>
-        <option value="другое">Другое</option>
-      </select><br />
+
       <label>
+        Багаж:
         <input
           type="checkbox"
-          checked={luggage}
-          onChange={() => setLuggage(!luggage)}
+          name="luggage"
+          checked={form.luggage}
+          onChange={handleChange}
         />
-        Наличие багажа
       </label><br />
+
       <button onClick={handleSubmit}>Отправить заявку</button>
       <p>{message}</p>
     </div>

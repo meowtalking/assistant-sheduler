@@ -11,9 +11,12 @@ class UserLogin(BaseModel):
     password: str
 
 class RequestCreate(BaseModel):
+    user_id: int
+    passenger_type: Optional[str]
     departure_station: str
     arrival_station: str
     departure_time: datetime
+    luggage: Optional[bool] = False
 
 class RequestOut(BaseModel):
     id: int

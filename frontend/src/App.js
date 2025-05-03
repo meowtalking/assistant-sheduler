@@ -25,14 +25,14 @@ function App() {
             Вы вошли как: {user.is_admin ? 'Администратор' : 'Пользователь'} (ID: {user.user_id})
           </p>
 
-          {/*{user.is_admin ? (*/}
-          {/*  <>*/}
-          {/*    <CreateEmployeeForm />*/}
-          {/*    <AdminRequestList />*/}
-          {/*  </>*/}
-          {/*) : (*/}
-          {/*  <RequestForm userId={user.user_id} />*/}
-          {/*)}*/}
+          {user.is_admin ? (
+            <>
+              <CreateEmployeeForm />
+              {/*<AdminRequestList />*/}
+            </>
+          ) : (
+            <RequestForm userId={user.user_id} />
+          )}
 
           <RequestList />
           <Schedule />

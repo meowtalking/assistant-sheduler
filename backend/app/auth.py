@@ -57,7 +57,8 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Неверный логин или пароль")
 
     token = create_access_token({"sub": db_user.username})
-    return {"access_token": token, "token_type": "bearer"}
+    return {"access_token": token, "token_type": "bearer","user_id": db_user.id,
+        "is_admin": db_user.role_id==2}
 
 
 @router.post("/token", response_model=Token)
@@ -70,3 +71,15 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
     access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
 
     return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/request")
+def create_request(request: schemas.RequestCreate, db: Session = Depends(get_db)):
+    db_request = models.Request(**request.dict())
+    db.add(db_request)
+    db.commit()
+    db.refresh(db_request)
+    return {"message": "Заявка создана"}
+
+@router.get("/requests")
+def get_requests(db: Session = Depends(get_db)):
+    return db.query(models.Request).all()
