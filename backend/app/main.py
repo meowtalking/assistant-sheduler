@@ -4,6 +4,7 @@ from app.algorithms import assign_employees
 from app.database import SessionLocal
 
 
+
 from fastapi import WebSocket, WebSocketDisconnect
 from app.models import Request
 from app.schemas import RequestSchema
@@ -81,13 +82,6 @@ async def get_task(id: int):
     return {"message": f"Task {id} details"}
 
 
-@app.get("/api/schedule")
-def get_schedule():
-    # Пример данных
-    return [
-        {"id": 1, "name": "Иван Иванов", "shift_time": "09:00-18:00"},
-        {"id": 2, "name": "Мария Петрова", "shift_time": "10:00-19:00"}
-    ]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000"],  # Для разработки можно оставить "*", но на проде — лучше указать конкретные адреса

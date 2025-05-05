@@ -1,17 +1,17 @@
-from fastapi import APIRouter
 from app.database import SessionLocal
-from app.models import User, Role
-from app.schemas import UserCreate, UserOut, Token
+from app.models import User, Role, Employee, User
+from app.schemas import UserCreate, UserOut, Token, EmployeeCreate
 from app.security import hash_password, authenticate_user, create_access_token
 from fastapi.security import OAuth2PasswordRequestForm
-
+from app.dependencies import get_current_user
 from fastapi import APIRouter, HTTPException, Depends
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from . import models, schemas, database
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-
+from .schemas import EmployeeScheduleSchema
+from typing import List
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -32,10 +32,6 @@ def verify_password(plain, hashed):
 def get_password_hash(password):
     return pwd_context.hash(password)
 
-def create_access_token(data: dict):
-    to_encode = data.copy()
-    to_encode.update({"exp": datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 @router.post("/register")
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
@@ -58,8 +54,29 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
 
     token = create_access_token({"sub": db_user.username})
     return {"access_token": token, "token_type": "bearer","user_id": db_user.id,
-        "is_admin": db_user.role_id==2}
+        "is_admin": db_user.role_id==1, "name": db_user.username}
 
+@router.post("/admin/employees")
+def create_employee(
+    employee: EmployeeCreate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    # Проверка прав
+    if not current_user.role.name == "admin":
+        raise HTTPException(status_code=403, detail="Доступ только для администраторов")
+
+    new_employee = Employee(
+        name=employee.name,
+        contact_info=employee.contact_info,
+        shift_time=employee.shift_time,
+        skills=employee.skills,
+    )
+    db.add(new_employee)
+    db.commit()
+    db.refresh(new_employee)
+
+    return {"message": "Сотрудник успешно создан", "employee_id": new_employee.id}
 
 @router.post("/token", response_model=Token)
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(SessionLocal)):
@@ -83,3 +100,8 @@ def create_request(request: schemas.RequestCreate, db: Session = Depends(get_db)
 @router.get("/requests")
 def get_requests(db: Session = Depends(get_db)):
     return db.query(models.Request).all()
+
+@router.get("/api/schedule", response_model=List[EmployeeScheduleSchema])
+def get_schedule(db: Session = Depends(get_db)):
+    # Например, фильтрация по is_available = True
+    return db.query(Employee).filter(Employee.is_available == True).all()

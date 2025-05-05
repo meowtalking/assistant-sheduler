@@ -1,8 +1,6 @@
 import pymysql
 pymysql.install_as_MySQLdb()
 from sqlalchemy import Column, Integer, String, Boolean, ForeignKey, DateTime
-from .database import Base
-from sqlalchemy.orm import relationship
 from app.database import Base
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
@@ -13,12 +11,16 @@ SQLALCHEMY_DATABASE_URL = "mysql://assistant_user:meowing@mysql:3306/assistantsh
 engine = create_engine(SQLALCHEMY_DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-
-
-from sqlalchemy import Column, Integer, String, Boolean, ForeignKey
 from sqlalchemy.orm import relationship
-from app.database import Base
 
+from sqlalchemy import Table
+
+request_employee = Table(
+    'request_employee',
+    Base.metadata,
+    Column('request_id', Integer, ForeignKey('requests.id')),
+    Column('employee_id', Integer, ForeignKey('employees.id'))
+)
 class Role(Base):
     __tablename__ = "roles"
 
@@ -52,6 +54,7 @@ class Request(Base):
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     user = relationship("User", back_populates="requests")
+    employees = relationship("Employee", secondary=request_employee, back_populates="requests")
 
 class Employee(Base):
     __tablename__ = 'employees'
@@ -61,18 +64,12 @@ class Employee(Base):
     contact_info = Column(String(255), nullable=True)
     shift_time = Column(String(50), nullable=False)
     skills = Column(String(255), nullable=True)  # Список навыков сотрудников
+    is_available = Column(Boolean, default=True)
+    requests = relationship("Request", secondary=request_employee, back_populates="employees")
 
 # Подключение к базе данных
 #DATABASE_URL = "mysql://root:meowmeow@localhost/assistantsheduler"
 
 Base.metadata.create_all(bind=engine)
-from fastapi import FastAPI
-from pydantic import BaseModel
 
-
-
-class Employee(BaseModel):
-    id: int
-    name: str
-    shift_time: str
 

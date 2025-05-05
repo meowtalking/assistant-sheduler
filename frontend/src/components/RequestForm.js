@@ -28,8 +28,13 @@ const RequestForm = ({ userId }) => {
       return;
     }
 
+    // Добавляем секунды, если отсутствуют
+    const formattedTime = form.departure_time.length === 16
+      ? `${form.departure_time}:00`
+      : form.departure_time;
+
     try {
-      const response = await fetch('http://localhost:8000/request', {
+      const response = await fetch('http://localhost:8000/api/request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -37,8 +42,8 @@ const RequestForm = ({ userId }) => {
           passenger_type: form.passenger_type,
           departure_station: form.departure_station,
           arrival_station: form.arrival_station,
-          departure_time: form.departure_time,
-          luggage: form.luggage ? 1 : 0, // Преобразуем в 1/0 для базы данных
+          departure_time: formattedTime,
+          luggage: form.luggage, // bool — true/false
         }),
       });
 
@@ -64,45 +69,47 @@ const RequestForm = ({ userId }) => {
   return (
     <div>
       <h3>Новая заявка</h3>
-      <select name="passenger_type" onChange={handleChange} value={form.passenger_type}>
-        <option value="">Выберите тип пассажира</option>
-        <option value="blind">Слабовидящий</option>
-        <option value="blind_with_baggage">Слабовидящий с багажом</option>
-        <option value="wheelchair">Коляска</option>
-      </select><br />
+      <form onSubmit={handleSubmit}>
+        <select name="passenger_type" onChange={handleChange} value={form.passenger_type}>
+          <option value="">Выберите тип пассажира</option>
+          <option value="blind">Слабовидящий</option>
+          <option value="blind_with_baggage">Слабовидящий с багажом</option>
+          <option value="wheelchair">Коляска</option>
+        </select><br />
 
-      <input
-        name="departure_station"
-        placeholder="Станция отправления"
-        onChange={handleChange}
-        value={form.departure_station}
-      /><br />
-
-      <input
-        name="arrival_station"
-        placeholder="Станция назначения"
-        onChange={handleChange}
-        value={form.arrival_station}
-      /><br />
-
-      <input
-        type="datetime-local"
-        name="departure_time"
-        onChange={handleChange}
-        value={form.departure_time}
-      /><br />
-
-      <label>
-        Багаж:
         <input
-          type="checkbox"
-          name="luggage"
-          checked={form.luggage}
+          name="departure_station"
+          placeholder="Станция отправления"
           onChange={handleChange}
-        />
-      </label><br />
+          value={form.departure_station}
+        /><br />
 
-      <button onClick={handleSubmit}>Отправить заявку</button>
+        <input
+          name="arrival_station"
+          placeholder="Станция назначения"
+          onChange={handleChange}
+          value={form.arrival_station}
+        /><br />
+
+        <input
+          type="datetime-local"
+          name="departure_time"
+          onChange={handleChange}
+          value={form.departure_time}
+        /><br />
+
+        <label>
+          Багаж:
+          <input
+            type="checkbox"
+            name="luggage"
+            checked={form.luggage}
+            onChange={handleChange}
+          />
+        </label><br />
+
+        <button type="submit">Отправить заявку</button>
+      </form>
       <p>{message}</p>
     </div>
   );

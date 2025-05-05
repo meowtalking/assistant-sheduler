@@ -8,9 +8,13 @@ const CreateEmployeeForm = () => {
   const [message, setMessage] = useState('');
 
   const handleSubmit = async () => {
+    const token = localStorage.getItem('token');
     const response = await fetch('http://localhost:8000/admin/employees', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
       body: JSON.stringify({
         name,
         contact_info: contactInfo,
@@ -20,7 +24,18 @@ const CreateEmployeeForm = () => {
     });
 
     const data = await response.json();
+    if (!response.ok) {
+      setMessage(data.detail || 'Ошибка при создании сотрудника');
+      return;
+    }
+
     setMessage(data.message || data.detail || 'Сотрудник добавлен');
+
+    // Очистка полей формы
+    setName('');
+    setContactInfo('');
+    setShiftTime('');
+    setSkills('');
   };
 
   return (

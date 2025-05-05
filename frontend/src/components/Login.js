@@ -15,10 +15,16 @@ const Login = ({ onLogin }) => {
     const data = await response.json();
 
     if (response.ok) {
-      setMessage(data.message);
-      onLogin({user_id: data.user_id, is_admin: data.is_admin }); // передаём данные наверх
+        onLogin({ user_id: data.user_id, is_admin: data.is_admin, name: data.name });
+        localStorage.setItem('user', JSON.stringify({
+          user_id: data.user_id,
+          is_admin: data.is_admin,
+          name: data.name
+        }));
+        setMessage(data.message);
+        onLogin({user_id: data.user_id, is_admin: data.is_admin, name: data.name }); // передаём данные наверх
     } else {
-      setMessage(data.detail);
+        setMessage(data.detail);
     }
   };
 

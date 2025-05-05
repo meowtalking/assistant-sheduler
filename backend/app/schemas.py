@@ -1,6 +1,6 @@
-from typing import Optional
-from pydantic import BaseModel
 from datetime import datetime
+from pydantic import BaseModel
+from typing import Optional
 
 class UserCreate(BaseModel):
     username: str
@@ -9,6 +9,20 @@ class UserCreate(BaseModel):
 class UserLogin(BaseModel):
     username: str
     password: str
+
+class EmployeeScheduleSchema(BaseModel):
+    id: int
+    name: str
+    shift_time: str
+
+    class Config:
+        orm_mode = True
+
+class EmployeeCreate(BaseModel):
+    name: str
+    contact_info: str
+    shift_time: str
+    skills: str
 
 class RequestCreate(BaseModel):
     user_id: int
@@ -27,15 +41,18 @@ class RequestOut(BaseModel):
     class Config:
         orm_mode = True
 
+from typing import Optional, List
+from pydantic import BaseModel
+
 class RequestSchema(BaseModel):
     id: int
     departure_station: str
     arrival_station: str
     departure_time: datetime
-    passenger_type: Optional[str]
-    status: Optional[str]
-    luggage: Optional[bool]
-    assigned_employee_ids: Optional[str]
+    passenger_type: str
+    status: str
+    luggage: bool
+    assigned_employee_ids: Optional[List[int]] = None  # ключевой момент
 
     class Config:
         orm_mode = True
@@ -44,7 +61,6 @@ class RequestSchema(BaseModel):
 class UserOut(BaseModel):
     id: int
     username: str
-    email: str
 
     class Config:
         orm_mode = True
@@ -54,5 +70,3 @@ class Token(BaseModel):
     token_type: str
 
 
-class Config:
-    orm_mode = True  # Это позволяет конвертировать объекты SQLAlchemy в Pydantic модели
