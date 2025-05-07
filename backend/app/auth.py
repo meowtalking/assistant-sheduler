@@ -10,8 +10,10 @@ from sqlalchemy.orm import Session
 from . import models, schemas, database
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
-from .schemas import EmployeeScheduleSchema
+from .schemas import EmployeeScheduleSchema, RequestOut
 from typing import List
+
+from sqlalchemy.orm import joinedload
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -89,15 +91,37 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
 
     return {"access_token": access_token, "token_type": "bearer"}
 
+# Функция для получения доступных сотрудников на указанное время
+def get_available_employees(departure_time: datetime, db: Session) -> List[models.Employee]:
+    # Получаем сотрудников, чьи смены не пересекаются с временем заявки
+    employees = db.query(models.Employee).filter(
+        models.Employee.shift_start <= departure_time,
+        models.Employee.shift_end >= departure_time
+    ).all()
+    return employees
+
 @router.post("/request")
 def create_request(request: schemas.RequestCreate, db: Session = Depends(get_db)):
+    # Проверка на наличие доступных сотрудников
+    print(request)
+    available_employees = get_available_employees(request.departure_time, db)
+    if not available_employees:
+        raise HTTPException(status_code=400, detail="Нет доступных сотрудников на указанное время")
+
+    # Создаем заявку
     db_request = models.Request(**request.dict())
+
+    # Назначаем первого доступного сотрудника на заявку
+    db_request.assigned_employee_ids = [available_employees[0].id]
+
     db.add(db_request)
     db.commit()
     db.refresh(db_request)
-    return {"message": "Заявка создана"}
 
-@router.get("/requests")
+    return {"message": "Заявка создана", "assigned_employee_id": available_employees[0].id}
+
+
+@router.get("/requests", response_model=List[RequestOut])
 def get_requests(db: Session = Depends(get_db)):
     return db.query(models.Request).all()
 
@@ -105,3 +129,13 @@ def get_requests(db: Session = Depends(get_db)):
 def get_schedule(db: Session = Depends(get_db)):
     # Например, фильтрация по is_available = True
     return db.query(Employee).filter(Employee.is_available == True).all()
+
+@router.get("/stations")
+def get_stations(db: Session = Depends(get_db)):
+    return db.query(models.Station).all()
+
+
+@router.get("/disruptions", response_model=List[schemas.DisruptionOut])
+def get_disruptions(db: Session = Depends(get_db)):
+    disruptions = db.query(models.Disruption).options(joinedload(models.Disruption.station)).all()
+    return disruptions

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-const RequestList = () => {
+const RequestList = ({ userId, role }) => {
   const [requests, setRequests] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -15,14 +15,20 @@ const RequestList = () => {
       })
       .then((data) => {
         console.log('Полученные заявки:', data);
-        setRequests(data);
+        if (role !== 'admin') {
+          // Для обычных пользователей показываем только их заявки
+          setRequests(data.filter(request => request.user_id === userId));
+        } else {
+          // Администратору показываем все заявки
+          setRequests(data);
+        }
       })
       .catch((err) => {
         console.error('Ошибка при получении заявок:', err);
         setError(err.message);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [userId, role]);
 
   if (loading) return <p>Загрузка...</p>;
   if (error) return <p style={{ color: 'red' }}>Ошибка: {error}</p>;
@@ -34,21 +40,29 @@ const RequestList = () => {
         <p>Заявок нет</p>
       ) : (
         <ul>
-          {requests.map((request) => (
-            <li key={request.id}>
-              {request.passenger_type} — {request.departure_station} → {request.arrival_station} <br />
-              Время: {new Date(request.departure_time).toLocaleString()} <br />
-              Статус: {request.status} <br />
-              Багаж: {request.luggage ? 'Да' : 'Нет'} <br />
-              Назначенные сотрудники: {
-                  Array.isArray(request.assigned_employee_ids)
-                    ? request.assigned_employee_ids.length > 0
-                      ? request.assigned_employee_ids.join(', ')
-                      : 'Нет'
-                    : 'Нет'
+          {requests.map((request) => {
+            let employeeIds = [];
+
+            try {
+              employeeIds = JSON.parse(request.assigned_employee_ids);
+              if (!Array.isArray(employeeIds)) employeeIds = [];
+            } catch {
+              employeeIds = [];
+            }
+
+            return (
+              <li key={request.id}>
+                {request.passenger_type} <br />
+                {request.departure_station.name} → {request.arrival_station.name} <br />
+                Время: {new Date(request.departure_time).toLocaleString()} <br />
+                Статус: {request.status} <br />
+                Багаж: {request.luggage ? 'Да' : 'Нет'} <br />
+                Назначенные сотрудники: {
+                  employeeIds.length > 0 ? employeeIds.join(', ') : 'Нет'
                 }
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

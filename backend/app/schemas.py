@@ -1,7 +1,6 @@
 from datetime import datetime
 from pydantic import BaseModel
-from typing import Optional
-
+from typing import Optional, List
 class UserCreate(BaseModel):
     username: str
     password: str
@@ -24,30 +23,36 @@ class EmployeeCreate(BaseModel):
     shift_time: str
     skills: str
 
+class StationBase(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        orm_mode = True
+
 class RequestCreate(BaseModel):
     user_id: int
     passenger_type: Optional[str]
-    departure_station: str
-    arrival_station: str
+    departure_station_id: int  # Измените на id
+    arrival_station_id: int  # Измените на id
     departure_time: datetime
     luggage: Optional[bool] = False
 
 class RequestOut(BaseModel):
     id: int
     status: str
-    departure_station: str
-    arrival_station: str
+    departure_station: StationBase
+    arrival_station: StationBase
+    departure_time: datetime
 
     class Config:
         orm_mode = True
 
-from typing import Optional, List
-from pydantic import BaseModel
 
 class RequestSchema(BaseModel):
     id: int
-    departure_station: str
-    arrival_station: str
+    departure_station: StationBase
+    arrival_station: StationBase
     departure_time: datetime
     passenger_type: str
     status: str
@@ -69,4 +74,45 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+class StationCreate(StationBase):
+    pass
 
+class Station(StationBase):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+class DisruptionBase(BaseModel):
+    station_id: int
+    type: str
+    description: Optional[str] = None
+    start_time: datetime
+    end_time: datetime
+
+class DisruptionCreate(DisruptionBase):
+    pass
+
+class DisruptionOut(DisruptionBase):
+    id: int
+    created_at: datetime
+    station: StationBase  # Вложенный объект станции
+
+    class Config:
+        orm_mode = True
+
+
+class ScheduleBase(BaseModel):
+    employee_id: int
+    start_time: datetime
+    end_time: datetime
+    is_available: Optional[bool] = True
+
+class ScheduleCreate(ScheduleBase):
+    pass
+
+class Schedule(ScheduleBase):
+    id: int
+
+    class Config:
+        orm_mode = True

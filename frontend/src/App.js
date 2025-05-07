@@ -41,14 +41,20 @@ function App() {
           {user.is_admin ? (
             <>
               <CreateEmployeeForm />
+              <Schedule />
+              <RequestList />
               {/*<AdminRequestList />*/}
             </>
           ) : (
-            <RequestForm userId={user.user_id} />
+            <>
+              <RequestForm userId={user.user_id} />
+              <RequestList />
+            </>
+
           )}
 
-          <RequestList />
-          <Schedule />
+
+
         </>
       )}
     </div>
