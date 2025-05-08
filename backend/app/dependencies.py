@@ -19,9 +19,14 @@ def get_db():
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     try:
+        print(f"Received token: {token}")  # Логирование токена для отладки
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        print(f"Decoded payload: {payload}")  # Логирование декодированного payload
         username = payload.get("sub")
-    except JWTError:
+        if username is None:
+            raise HTTPException(status_code=403, detail="Token is missing 'sub' field")
+    except JWTError as e:
+        print(f"JWT decode error: {str(e)}")  # Логирование ошибки декодирования
         raise HTTPException(status_code=403, detail="Неверный токен")
 
     user = db.query(User).filter(User.username == username).first()

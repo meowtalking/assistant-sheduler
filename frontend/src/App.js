@@ -5,10 +5,10 @@ import RequestList from './components/RequestList';
 import Schedule from './components/Schedule';
 import RequestForm from './components/RequestForm';
 import CreateEmployeeForm from './components/CreateEmployeeForm';
-//import AdminRequestList from './components/AdminRequestList';
 
 function App() {
   const [user, setUser] = useState(null);
+
   useEffect(() => {
     const savedUser = localStorage.getItem('user');
     if (savedUser) {
@@ -30,31 +30,26 @@ function App() {
           <p>
             Вы вошли как: {user.is_admin ? 'Администратор' : 'Пользователь'} (name: {user.name})
           </p>
-            <button onClick={() => {
-              localStorage.removeItem('user');
-              localStorage.removeItem('token');
-              setUser(null);
-            }}>
-              Выйти
-            </button>
+          <button onClick={() => {
+            localStorage.removeItem('user');
+            localStorage.removeItem('token');
+            setUser(null);
+          }}>
+            Выйти
+          </button>
 
           {user.is_admin ? (
             <>
               <CreateEmployeeForm />
               <Schedule />
               <RequestList />
-              {/*<AdminRequestList />*/}
             </>
           ) : (
             <>
               <RequestForm userId={user.user_id} />
               <RequestList />
             </>
-
           )}
-
-
-
         </>
       )}
     </div>

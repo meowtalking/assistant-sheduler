@@ -20,8 +20,13 @@ class EmployeeScheduleSchema(BaseModel):
 class EmployeeCreate(BaseModel):
     name: str
     contact_info: str
-    shift_time: str
-    skills: str
+    skills: List[str]
+    shift_start: str  # Например, '08:00:00'
+    shift_end: str    # Например, '20:00:00'
+    available_days: List[str]  # Например, ['mon', 'tue', 'wed', 'thu']
+
+    class Config:
+        orm_mode = True
 
 class EmployeeOut(BaseModel):
     id: int

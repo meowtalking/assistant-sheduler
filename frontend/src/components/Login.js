@@ -15,16 +15,24 @@ const Login = ({ onLogin }) => {
     const data = await response.json();
 
     if (response.ok) {
-        onLogin({ user_id: data.user_id, is_admin: data.is_admin, name: data.name });
-        localStorage.setItem('user', JSON.stringify({
-          user_id: data.user_id,
-          is_admin: data.is_admin,
-          name: data.name
-        }));
-        setMessage(data.message);
-        onLogin({user_id: data.user_id, is_admin: data.is_admin, name: data.name }); // передаём данные наверх
+      // ✅ Сохраняем сам токен
+      localStorage.setItem('token', data.access_token);
+
+      // ✅ Сохраняем инфо о пользователе (если нужно)
+      localStorage.setItem('user', JSON.stringify({
+        user_id: data.user_id,
+        is_admin: data.is_admin,
+        name: data.name
+      }));
+
+      setMessage(data.message || 'Успешный вход');
+      onLogin({
+        user_id: data.user_id,
+        is_admin: data.is_admin,
+        name: data.name
+      });
     } else {
-        setMessage(data.detail);
+      setMessage(data.detail || 'Ошибка входа');
     }
   };
 

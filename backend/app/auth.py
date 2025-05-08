@@ -70,17 +70,22 @@ def create_employee(
     if not current_user.role.name == "admin":
         raise HTTPException(status_code=403, detail="Доступ только для администраторов")
 
+    # Создание нового сотрудника
     new_employee = Employee(
         name=employee.name,
         contact_info=employee.contact_info,
-        shift_time=employee.shift_time,
         skills=employee.skills,
+        shift_start=employee.shift_start,
+        shift_end=employee.shift_end,
+        available_days=employee.available_days,
     )
+
     db.add(new_employee)
     db.commit()
     db.refresh(new_employee)
 
     return {"message": "Сотрудник успешно создан", "employee_id": new_employee.id}
+
 
 @router.post("/token", response_model=Token)
 def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(SessionLocal)):
@@ -132,10 +137,22 @@ def get_requests(db: Session = Depends(get_db)):
     requests = db.query(models.Request).options(joinedload(models.Request.assigned_employees)).all()
     return requests
 
+
 @router.get("/api/schedule", response_model=List[EmployeeScheduleSchema])
 def get_schedule(db: Session = Depends(get_db)):
-    # Например, фильтрация по is_available = True
-    return db.query(Employee).filter(Employee.is_available == True).all()
+    # Получаем всех сотрудников с доступным временем
+    employees = db.query(Employee).filter(Employee.is_available == True).all()
+
+    # Преобразуем сотрудников в нужный формат для ответа
+    schedule = []
+    for employee in employees:
+        schedule.append({
+            "id": employee.id,
+            "name": employee.name,
+            "shift_time": f"{employee.shift_start} - {employee.shift_end}"  # Форматируем shift_time
+        })
+
+    return schedule
 
 @router.get("/stations")
 def get_stations(db: Session = Depends(get_db)):
