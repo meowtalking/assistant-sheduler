@@ -6,7 +6,7 @@ const RequestList = ({ userId, role }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://localhost:8000/api/requests')
+    fetch('http://localhost:8000/requests')
       .then((response) => {
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -41,14 +41,6 @@ const RequestList = ({ userId, role }) => {
       ) : (
         <ul>
           {requests.map((request) => {
-            let employeeIds = [];
-
-            try {
-              employeeIds = JSON.parse(request.assigned_employee_ids);
-              if (!Array.isArray(employeeIds)) employeeIds = [];
-            } catch {
-              employeeIds = [];
-            }
 
             return (
               <li key={request.id}>
@@ -58,7 +50,7 @@ const RequestList = ({ userId, role }) => {
                 Статус: {request.status} <br />
                 Багаж: {request.luggage ? 'Да' : 'Нет'} <br />
                 Назначенные сотрудники: {
-                  employeeIds.length > 0 ? employeeIds.join(', ') : 'Нет'
+                  (request.assigned_employees || []).map(e => e.name).join(', ') || 'Нет'
                 }
               </li>
             );

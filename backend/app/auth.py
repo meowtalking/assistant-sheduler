@@ -10,6 +10,8 @@ from sqlalchemy.orm import Session
 from . import models, schemas, database
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
+
+from .algorithms import assign_employees
 from .schemas import EmployeeScheduleSchema, RequestOut
 from typing import List
 
@@ -93,37 +95,42 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
 
 # Функция для получения доступных сотрудников на указанное время
 def get_available_employees(departure_time: datetime, db: Session) -> List[models.Employee]:
-    # Получаем сотрудников, чьи смены не пересекаются с временем заявки
     employees = db.query(models.Employee).filter(
         models.Employee.shift_start <= departure_time,
-        models.Employee.shift_end >= departure_time
+        models.Employee.shift_end >= departure_time,
+        models.Employee.is_available == True  # Проверяем, что сотрудник доступен
     ).all()
     return employees
 
 @router.post("/request")
 def create_request(request: schemas.RequestCreate, db: Session = Depends(get_db)):
-    # Проверка на наличие доступных сотрудников
-    print(request)
-    available_employees = get_available_employees(request.departure_time, db)
-    if not available_employees:
+    # Прежде чем назначить сотрудников, проверим доступных
+    all_employees = get_available_employees(request.departure_time, db)
+
+    if not all_employees:
         raise HTTPException(status_code=400, detail="Нет доступных сотрудников на указанное время")
 
-    # Создаем заявку
     db_request = models.Request(**request.dict())
+    assigned_requests = assign_employees([db_request], all_employees)
 
-    # Назначаем первого доступного сотрудника на заявку
-    db_request.assigned_employee_ids = [available_employees[0].id]
+    if not assigned_requests or not assigned_requests[0].assigned_employees:
+        raise HTTPException(status_code=400, detail="Не удалось назначить сотрудников")
 
+    db_request.assigned_employees = assigned_requests[0].assigned_employees
     db.add(db_request)
     db.commit()
     db.refresh(db_request)
 
-    return {"message": "Заявка создана", "assigned_employee_id": available_employees[0].id}
+    return {
+        "message": "Заявка создана",
+        "assigned_employee_names": [e.name for e in db_request.assigned_employees]
+    }
 
 
-@router.get("/requests", response_model=List[RequestOut])
+@router.get("/requests", response_model=List[schemas.RequestOut])
 def get_requests(db: Session = Depends(get_db)):
-    return db.query(models.Request).all()
+    requests = db.query(models.Request).options(joinedload(models.Request.assigned_employees)).all()
+    return requests
 
 @router.get("/api/schedule", response_model=List[EmployeeScheduleSchema])
 def get_schedule(db: Session = Depends(get_db)):

@@ -1,71 +1,67 @@
 from datetime import datetime, timedelta
 from collections import defaultdict
+from typing import List
 from app.models import Request, Employee
 
-MAX_REQUESTS_PER_DAY = 3  # Ограничение на количество заявок в день
+MAX_REQUESTS_PER_DAY = 5
+TIME_BUFFER = timedelta(hours=2)
 
-def is_employee_available(employee: Employee, request_time: datetime):
-    weekday = request_time.strftime('%a').lower()  # 'mon', 'tue', ...
-    if weekday not in employee.available_days:
+# Функции-помощники
+def is_employee_available(employee: Employee, departure_time: datetime) -> bool:
+    weekday = departure_time.strftime("%a").lower()[:3]  # например, 'mon'
+    if weekday not in (employee.available_days or []):
         return False
 
-    # Проверка смены
-    if hasattr(employee, "shift_start") and hasattr(employee, "shift_end"):
-        if not (employee.shift_start <= request_time.time() <= employee.shift_end):
-            return False
+    shift_start = employee.shift_start  # уже datetime.time
+    shift_end = employee.shift_end
+    dep_time = departure_time.time()
 
-    return True
+    return shift_start <= dep_time <= shift_end
 
-def requests_overlap(req1: Request, req2: Request):
-    delta = timedelta(minutes=30)  # Допустимый интервал между заявками
-    return abs(req1.departure_time - req2.departure_time) < delta
+def requests_conflict(r1: Request, r2: Request) -> bool:
+    delta = abs(r1.departure_time - r2.departure_time)
+    return delta < TIME_BUFFER
 
-def assign_employees(requests: list[Request], employees: list[Employee]):
+def assign_employees(requests: List[Request], employees: List[Employee]):
     assigned_requests = []
     daily_load = defaultdict(lambda: defaultdict(int))  # employee_id -> date -> count
-    employee_schedule = defaultdict(list)  # employee_id -> list of assigned requests
+    schedule = defaultdict(list)  # employee_id -> List[Request]
 
     for request in sorted(requests, key=lambda r: r.departure_time):
-        # Определяем нужное количество сотрудников
-        if request.passenger_type == "слабовидящий":
-            required_employees = 1
-        elif request.passenger_type == "инвалид-коляска":
-            required_employees = 4 if request.luggage else 2
+        # Вычисляем требуемое количество сотрудников
+        if request.passenger_type == "blind":
+            required = 2 if request.luggage else 1
+        elif request.passenger_type == "wheelchair":
+            required = 4 if request.luggage else 2
         else:
-            required_employees = 1  # По умолчанию
+            required = 1
 
-        available_employees = []
+        available = []
 
         for employee in employees:
-            if request.passenger_type not in employee.skills:
+            if request.passenger_type not in (employee.skills or []):
                 continue
             if not is_employee_available(employee, request.departure_time):
                 continue
             if daily_load[employee.id][request.departure_time.date()] >= MAX_REQUESTS_PER_DAY:
                 continue
 
-            # Проверка на пересечение заявок
-            conflict = False
-            for assigned_req in employee_schedule[employee.id]:
-                if requests_overlap(request, assigned_req):
-                    conflict = True
-                    break
+            # Проверка конфликтов по времени
+            if any(requests_conflict(request, assigned) for assigned in schedule[employee.id]):
+                continue
 
-            if not conflict:
-                available_employees.append(employee)
+            available.append(employee)
 
-        if len(available_employees) >= required_employees:
-            assigned = available_employees[:required_employees]
-            request.assigned_employee_ids = [emp.id for emp in assigned]
+        if len(available) >= required:
+            assigned = available[:required]
+            request.assigned_employees = assigned  # Сохраняем список в объект (для создания в БД)
 
-            # Обновление графика и нагрузки
             for emp in assigned:
-                employee_schedule[emp.id].append(request)
+                schedule[emp.id].append(request)
                 daily_load[emp.id][request.departure_time.date()] += 1
 
             assigned_requests.append(request)
         else:
-            # Заявку невозможно назначить — можно логировать
-            request.assigned_employee_ids = []
+            request.assigned_employees = []  # Назначить никого не удалось
 
     return assigned_requests

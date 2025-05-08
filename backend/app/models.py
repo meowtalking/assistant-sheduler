@@ -44,6 +44,12 @@ class User(Base):
     role = relationship("Role", back_populates="users")
     requests = relationship("Request", back_populates="user")
 
+class RequestEmployee(Base):
+    __tablename__ = 'request_employees'
+
+    request_id = Column(Integer, ForeignKey('requests.id', ondelete='CASCADE'), primary_key=True)
+    employee_id = Column(Integer, ForeignKey('employees.id', ondelete='CASCADE'), primary_key=True)
+
 class Request(Base):
     __tablename__ = "requests"
 
@@ -59,12 +65,11 @@ class Request(Base):
     departure_time = Column(DateTime, nullable=False)
     status = Column(String(50), default="pending")
     luggage = Column(Boolean, default=False)
-    assigned_employee_ids = Column(JSON, nullable=True)
+
+    assigned_employees = relationship('Employee', secondary='request_employees', back_populates="requests")
 
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     user = relationship("User", back_populates="requests")
-
-    employees = relationship("Employee", secondary="request_employee", back_populates="requests")
 
 class Employee(Base):
     __tablename__ = 'employees'
@@ -78,7 +83,7 @@ class Employee(Base):
     is_available = Column(Boolean, default=True)
     available_days = Column(JSON, nullable=True)  # ["mon", "tue", "wed"]
 
-    requests = relationship("Request", secondary=request_employee, back_populates="employees")
+    requests = relationship("Request", secondary='request_employees', back_populates="assigned_employees")
 
 class DisruptionTypeEnum(str, enum.Enum):
     delay = 'delay'

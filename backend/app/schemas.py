@@ -23,6 +23,13 @@ class EmployeeCreate(BaseModel):
     shift_time: str
     skills: str
 
+class EmployeeOut(BaseModel):
+    id: int
+    name: str
+
+    class Config:
+        orm_mode = True
+
 class StationBase(BaseModel):
     id: int
     name: str
@@ -43,7 +50,10 @@ class RequestOut(BaseModel):
     status: str
     departure_station: StationBase
     arrival_station: StationBase
+    passenger_type: str
     departure_time: datetime
+    luggage: bool
+    assigned_employees: List[EmployeeOut]  # Здесь можно хранить сериализованный JSON
 
     class Config:
         orm_mode = True
@@ -57,7 +67,6 @@ class RequestSchema(BaseModel):
     passenger_type: str
     status: str
     luggage: bool
-    assigned_employee_ids: Optional[List[int]] = None  # ключевой момент
 
     class Config:
         orm_mode = True
