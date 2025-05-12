@@ -22,14 +22,16 @@ const Login = ({ onLogin }) => {
       localStorage.setItem('user', JSON.stringify({
         user_id: data.user_id,
         is_admin: data.is_admin,
-        name: data.name
+        name: data.name,
+        role_id: data.role_id
       }));
 
       setMessage(data.message || 'Успешный вход');
       onLogin({
         user_id: data.user_id,
         is_admin: data.is_admin,
-        name: data.name
+        name: data.name,
+        role_id: data.role_id
       });
     } else {
       setMessage(data.detail || 'Ошибка входа');

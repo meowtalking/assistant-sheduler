@@ -5,6 +5,7 @@ import RequestList from './components/RequestList';
 import Schedule from './components/Schedule';
 import RequestForm from './components/RequestForm';
 import CreateEmployeeForm from './components/CreateEmployeeForm';
+import AssistantRequests from "./components/AssistantRequests";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -15,6 +16,9 @@ function App() {
       setUser(JSON.parse(savedUser));
     }
   }, []);
+
+  const isAdmin = user?.role_id === 1;  // Админ
+  const isAssistant = user?.role_id === 3;  // Ассистент
 
   return (
     <div className="App">
@@ -28,21 +32,35 @@ function App() {
       ) : (
         <>
           <p>
-            Вы вошли как: {user.is_admin ? 'Администратор' : 'Пользователь'} (name: {user.name})
+            Вы вошли как:{" "}
+            {isAdmin
+              ? "Администратор"
+              : isAssistant
+              ? "Ассистент"
+              : "Пользователь"}{" "}
+            (name: {user.name})
           </p>
-          <button onClick={() => {
-            localStorage.removeItem('user');
-            localStorage.removeItem('token');
-            setUser(null);
-          }}>
+          <button
+            onClick={() => {
+              localStorage.removeItem("user");
+              localStorage.removeItem("token");
+              setUser(null);
+            }}
+          >
             Выйти
           </button>
 
-          {user.is_admin ? (
+          {isAdmin ? (
             <>
               <CreateEmployeeForm />
               <Schedule />
               <RequestList />
+              <AssistantRequests />
+            </>
+          ) : isAssistant ? (
+            <>
+              <AssistantRequests />
+              <Schedule />
             </>
           ) : (
             <>

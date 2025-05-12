@@ -12,6 +12,7 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta
 
 from .algorithms import assign_employees
+from .models import Request
 from .schemas import EmployeeScheduleSchema, RequestOut
 from typing import List
 
@@ -56,9 +57,9 @@ def login(user: schemas.UserLogin, db: Session = Depends(get_db)):
     if not db_user or not verify_password(user.password, db_user.hashed_password):
         raise HTTPException(status_code=401, detail="Неверный логин или пароль")
 
-    token = create_access_token({"sub": db_user.username})
+    token = create_access_token({"sub": db_user.id})
     return {"access_token": token, "token_type": "bearer","user_id": db_user.id,
-        "is_admin": db_user.role_id==1, "name": db_user.username}
+        "is_admin": db_user.role_id==1, "name": db_user.username, "role_id": db_user.role_id}
 
 @router.post("/admin/employees")
 def create_employee(
@@ -94,7 +95,7 @@ def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db:
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     access_token_expires = timedelta(minutes=30)
-    access_token = create_access_token(data={"sub": user.email}, expires_delta=access_token_expires)
+    access_token = create_access_token(data={"sub": user.id}, expires_delta=access_token_expires)
 
     return {"access_token": access_token, "token_type": "bearer"}
 
@@ -153,6 +154,47 @@ def get_schedule(db: Session = Depends(get_db)):
         })
 
     return schedule
+
+from datetime import datetime  # Добавьте этот импорт в начале файла
+
+@router.get("/assistant/requests", response_model=List[schemas.RequestOut])
+def get_assistant_requests(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    try:
+        # Проверка роли
+        if current_user.role.id != 3:
+            raise HTTPException(status_code=403, detail="Доступ запрещён")
+
+        # Находим сотрудника, связанного с текущим пользователем
+        employee = db.query(Employee).filter(Employee.user_id == current_user.id).first()
+        if not employee:
+            raise HTTPException(status_code=404, detail="Сотрудник не найден")
+
+        # Текущая дата и время
+        current_time = datetime.utcnow()
+
+        # Получаем заявки, где:
+        # 1. Сотрудник назначен
+        # 2. Дата заявки ещё не наступила
+        requests = (
+            db.query(Request)
+            .join(Request.assigned_employees)
+            .filter(
+                Employee.id == employee.id,
+                Request.departure_time > current_time  # Фильтр по дате
+            )
+            .options(joinedload(Request.assigned_employees))
+            .order_by(Request.departure_time.asc())  # Сортировка по дате
+            .all()
+        )
+
+        return requests
+
+    except Exception as e:
+        print(f"ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal error")
 
 @router.get("/stations")
 def get_stations(db: Session = Depends(get_db)):

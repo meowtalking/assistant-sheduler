@@ -18,8 +18,8 @@ SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
 # Связующая таблица многие-ко-многим для заявок и сотрудников
-request_employee = Table(
-    'request_employee',
+request_employees = Table(
+    'request_employees',
     Base.metadata,
     Column('request_id', Integer, ForeignKey('requests.id')),
     Column('employee_id', Integer, ForeignKey('employees.id'))
@@ -40,15 +40,17 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     role_id = Column(Integer, ForeignKey("roles.id"))
+    employee_id = Column(Integer, ForeignKey("employees.id"))
 
     role = relationship("Role", back_populates="users")
     requests = relationship("Request", back_populates="user")
+    employee = relationship(
+        "Employee",
+        back_populates="user",
+        uselist=False,
+        foreign_keys=[employee_id]
+    )
 
-class RequestEmployee(Base):
-    __tablename__ = 'request_employees'
-
-    request_id = Column(Integer, ForeignKey('requests.id', ondelete='CASCADE'), primary_key=True)
-    employee_id = Column(Integer, ForeignKey('employees.id', ondelete='CASCADE'), primary_key=True)
 
 class Request(Base):
     __tablename__ = "requests"
@@ -67,7 +69,6 @@ class Request(Base):
     luggage = Column(Boolean, default=False)
 
     assigned_employees = relationship('Employee', secondary='request_employees', back_populates="requests")
-
     user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     user = relationship("User", back_populates="requests")
 
@@ -82,8 +83,15 @@ class Employee(Base):
     skills = Column(JSON, nullable=True)  # Список навыков сотрудников
     is_available = Column(Boolean, default=True)
     available_days = Column(JSON, nullable=True)  # ["mon", "tue", "wed"]
+    user_id = Column(Integer, ForeignKey("users.id"), unique=True)
+    user = relationship(
+        "User",
+        back_populates="employee",
+        foreign_keys="[User.employee_id]"
+    )
 
-    requests = relationship("Request", secondary='request_employees', back_populates="assigned_employees")
+    requests = relationship('Request', secondary='request_employees', back_populates="assigned_employees")
+    schedules = relationship("Schedule", backref="employee", cascade="all, delete-orphan")
 
 class DisruptionTypeEnum(str, enum.Enum):
     delay = 'delay'
