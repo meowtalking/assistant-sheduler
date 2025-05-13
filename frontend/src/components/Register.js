@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const Register = () => {
+const Register = ({ switchToLogin }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isDisabled, setIsDisabled] = useState(false);
@@ -15,23 +15,27 @@ const Register = () => {
 
     const data = await response.json();
     setMessage(data.message || data.detail);
+
+    if (response.ok) {
+      switchToLogin();
+    }
   };
 
   return (
-    <div>
+    <div className="auth-form">
       <h2>Регистрация</h2>
       <input
         type="email"
         placeholder="Email"
         value={username}
         onChange={(e) => setUsername(e.target.value)}
-      /><br />
+      />
       <input
         type="password"
         placeholder="Пароль"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
-      /><br />
+      />
       <label>
         <input
           type="checkbox"
@@ -39,11 +43,14 @@ const Register = () => {
           onChange={() => setIsDisabled(!isDisabled)}
         />
         Я подтверждаю, что являюсь инвалидом и нуждаюсь в сопровождении
-      </label><br />
+      </label>
       <button onClick={handleRegister} disabled={!isDisabled}>
         Зарегистрироваться
       </button>
-      <p>{message}</p>
+      {message && <p className="auth-message">{message}</p>}
+      <p className="auth-toggle">
+        Уже есть аккаунт? <button onClick={switchToLogin}>Войти</button>
+      </p>
     </div>
   );
 };

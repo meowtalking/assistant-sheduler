@@ -41,6 +41,31 @@ const AssistantRequests = () => {
       minute: '2-digit'
     });
   };
+// Внутри AssistantRequests компонента, добавим:
+const handleStatusChange = async (id, newStatus) => {
+  const token = localStorage.getItem('token');
+  try {
+    const response = await fetch(`http://localhost:8000/assistant/requests/${id}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ status: newStatus })
+    });
+
+    if (response.ok) {
+      setRequests(prev =>
+        prev.map(r => (r.id === id ? { ...r, status: newStatus } : r))
+      );
+    } else {
+      const data = await response.json();
+      alert(data.detail || 'Ошибка обновления статуса');
+    }
+  } catch (error) {
+    alert('Ошибка соединения с сервером');
+  }
+};
 
   return (
     <div className="requests-container">
@@ -75,12 +100,14 @@ const AssistantRequests = () => {
                   <span className="detail-label">Багаж:</span>
                   <span className="detail-value">{req.luggage ? 'Да' : 'Нет'}</span>
                 </div>
+
                 <div className="detail-row">
                   <span className="detail-label">Статус:</span>
                   <span className={`status-badge status-${req.status.toLowerCase()}`}>
                     {req.status}
                   </span>
                 </div>
+
                 {req.assigned_employees.length > 0 && (
                   <div className="assigned-employees">
                     <span className="detail-label">Назначенные сотрудники:</span>
@@ -90,7 +117,20 @@ const AssistantRequests = () => {
                       ))}
                     </div>
                   </div>
+
                 )}
+
+              </div>
+              <div className="detail-row">
+                <label>Изменить статус:</label>
+                <select
+                  value={req.status}
+                  onChange={e => handleStatusChange(req.id, e.target.value)}
+                >
+                  <option value="Ожидает">Ожидает</option>
+                  <option value="В процессе">В процессе</option>
+                  <option value="Завершена">Завершена</option>
+                </select>
               </div>
             </div>
           ))}
@@ -99,5 +139,15 @@ const AssistantRequests = () => {
     </div>
   );
 };
+
+
+
+
+
+
+
+
+
+
 
 export default AssistantRequests;

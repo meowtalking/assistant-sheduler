@@ -76,6 +76,13 @@ class RequestSchema(BaseModel):
     class Config:
         orm_mode = True
 
+class EmergencyRequestIn(BaseModel):
+    request_id: int
+    message: str
+
+class ReassignRequestSchema(BaseModel):
+    request_id: int
+    employee_ids: List[int]
 
 class UserOut(BaseModel):
     id: int

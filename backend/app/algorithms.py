@@ -18,9 +18,12 @@ def is_employee_available(employee: Employee, departure_time: datetime) -> bool:
 
     return shift_start <= dep_time <= shift_end
 
-def requests_conflict(r1: Request, r2: Request) -> bool:
-    delta = abs(r1.departure_time - r2.departure_time)
-    return delta < TIME_BUFFER
+def requests_conflict(existing_requests: List[Request], new_request: Request) -> bool:
+    for req in existing_requests:
+        delta = abs(req.departure_time - new_request.departure_time)
+        if delta < TIME_BUFFER:
+            return True
+    return False
 
 def assign_employees(requests: List[Request], employees: List[Employee]):
     assigned_requests = []
@@ -28,7 +31,6 @@ def assign_employees(requests: List[Request], employees: List[Employee]):
     schedule = defaultdict(list)  # employee_id -> List[Request]
 
     for request in sorted(requests, key=lambda r: r.departure_time):
-        # Вычисляем требуемое количество сотрудников
         if request.passenger_type == "blind":
             required = 2 if request.luggage else 1
         elif request.passenger_type == "wheelchair":
@@ -45,16 +47,14 @@ def assign_employees(requests: List[Request], employees: List[Employee]):
                 continue
             if daily_load[employee.id][request.departure_time.date()] >= MAX_REQUESTS_PER_DAY:
                 continue
-
-            # Проверка конфликтов по времени
-            if any(requests_conflict(request, assigned) for assigned in schedule[employee.id]):
+            if requests_conflict(schedule[employee.id], request):
                 continue
 
             available.append(employee)
 
         if len(available) >= required:
             assigned = available[:required]
-            request.assigned_employees = assigned  # Сохраняем список в объект (для создания в БД)
+            request.assigned_employees = assigned
 
             for emp in assigned:
                 schedule[emp.id].append(request)

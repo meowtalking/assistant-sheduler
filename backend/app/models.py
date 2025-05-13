@@ -129,5 +129,21 @@ class Schedule(Base):
     end_time = Column(DateTime, nullable=False)
     is_available = Column(Boolean, default=True)
 
+class EmergencyCall(Base):
+    __tablename__ = "emergency_calls"
+
+    id = Column(Integer, primary_key=True, index=True)
+    request_id = Column(Integer, ForeignKey("requests.id"))
+    message = Column(Text)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class ReassignmentRequest(Base):
+    __tablename__ = "reassignment_requests"
+
+    id = Column(Integer, primary_key=True)
+    request_id = Column(Integer, ForeignKey("requests.id"))
+    reason = Column(String(255))
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 # Создание таблиц в базе данных
 Base.metadata.create_all(bind=engine)

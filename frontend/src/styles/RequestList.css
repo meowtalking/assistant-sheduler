@@ -1,0 +1,49 @@
+.request-list {
+  max-width: 800px;
+  margin: 30px auto;
+  padding: 20px;
+  background-color: #f9f9f9;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  font-family: Arial, sans-serif;
+}
+
+.title {
+  text-align: center;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.loading,
+.error,
+.no-requests {
+  text-align: center;
+  font-size: 18px;
+  color: #555;
+}
+
+.error {
+  color: red;
+}
+
+.request-items {
+  list-style-type: none;
+  padding: 0;
+}
+
+.request-item {
+  background-color: white;
+  padding: 15px;
+  margin-bottom: 15px;
+  border-left: 5px solid #007BFF;
+  border-radius: 8px;
+  transition: background-color 0.3s;
+}
+
+.request-item:hover {
+  background-color: #f0f8ff;
+}
+
+.request-item p {
+  margin: 5px 0;
+}

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const Login = ({ onLogin }) => {
+const Login = ({ onLogin, switchToRegister }) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [message, setMessage] = useState('');
@@ -15,10 +15,7 @@ const Login = ({ onLogin }) => {
     const data = await response.json();
 
     if (response.ok) {
-      // ✅ Сохраняем сам токен
       localStorage.setItem('token', data.access_token);
-
-      // ✅ Сохраняем инфо о пользователе (если нужно)
       localStorage.setItem('user', JSON.stringify({
         user_id: data.user_id,
         is_admin: data.is_admin,
@@ -26,7 +23,6 @@ const Login = ({ onLogin }) => {
         role_id: data.role_id
       }));
 
-      setMessage(data.message || 'Успешный вход');
       onLogin({
         user_id: data.user_id,
         is_admin: data.is_admin,
@@ -39,14 +35,25 @@ const Login = ({ onLogin }) => {
   };
 
   return (
-    <div>
+    <div className="auth-form">
       <h2>Вход</h2>
-      <input type="username" placeholder="Email" value={username}
-             onChange={(e) => setUsername(e.target.value)} /><br />
-      <input type="password" placeholder="Пароль" value={password}
-             onChange={(e) => setPassword(e.target.value)} /><br />
+      <input
+        type="username"
+        placeholder="Email"
+        value={username}
+        onChange={(e) => setUsername(e.target.value)}
+      />
+      <input
+        type="password"
+        placeholder="Пароль"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
       <button onClick={handleLogin}>Войти</button>
-      <p>{message}</p>
+      {message && <p className="auth-message">{message}</p>}
+      <p className="auth-toggle">
+        Нет аккаунта? <button onClick={switchToRegister}>Зарегистрироваться</button>
+      </p>
     </div>
   );
 };

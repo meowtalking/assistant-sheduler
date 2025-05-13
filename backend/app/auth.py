@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 
 from .algorithms import assign_employees
 from .models import Request
-from .schemas import EmployeeScheduleSchema, RequestOut
+from .schemas import EmployeeScheduleSchema, RequestOut, EmergencyRequestIn, ReassignRequestSchema
 from typing import List
 
 from sqlalchemy.orm import joinedload
@@ -45,7 +45,7 @@ def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400, detail="Пользователь уже существует")
 
     hashed_password = get_password_hash(user.password)
-    new_user = models.User(username=user.username, hashed_password=hashed_password, role_id=1)
+    new_user = models.User(username=user.username, hashed_password=hashed_password, role_id=2)
     db.add(new_user)
     db.commit()
     db.refresh(new_user)
@@ -134,10 +134,23 @@ def create_request(request: schemas.RequestCreate, db: Session = Depends(get_db)
 
 
 @router.get("/requests", response_model=List[schemas.RequestOut])
-def get_requests(db: Session = Depends(get_db)):
-    requests = db.query(models.Request).options(joinedload(models.Request.assigned_employees)).all()
-    return requests
+def get_upcoming_requests(
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user),
+):
+    now = datetime.utcnow()
+    query = db.query(models.Request).options(joinedload(models.Request.assigned_employees))
 
+    query = query.filter(
+        models.Request.departure_time >= now,
+        models.Request.status.notin_(["cancelled", "completed"])
+    )
+
+    # Если пользователь не администратор (роль не 1), фильтруем по user_id
+    if current_user.role_id != 1:
+        query = query.filter(models.Request.user_id == current_user.id)
+
+    return query.all()
 
 @router.get("/api/schedule", response_model=List[EmployeeScheduleSchema])
 def get_schedule(db: Session = Depends(get_db)):
@@ -205,3 +218,138 @@ def get_stations(db: Session = Depends(get_db)):
 def get_disruptions(db: Session = Depends(get_db)):
     disruptions = db.query(models.Disruption).options(joinedload(models.Disruption.station)).all()
     return disruptions
+
+
+# Все заявки (для администратора)
+@router.get("/admin/requests", response_model=List[schemas.RequestOut])
+def get_all_requests(db: Session = Depends(get_db)):
+    return db.query(models.Request).all()
+
+
+# Переназначение заявки
+@router.post("/admin/reassign")
+def reassign_request(
+    data: ReassignRequestSchema,
+    db: Session = Depends(get_db)
+):
+    request = db.query(models.Request).filter(models.Request.id == data.request_id).first()
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    employees = db.query(models.Employee).filter(models.Employee.id.in_(data.employee_ids)).all()
+    if len(employees) != len(data.employee_ids):
+        raise HTTPException(status_code=400, detail="One or more employees not found")
+
+    request.assigned_employees = employees
+    db.commit()
+    return {"message": "Request reassigned successfully"}
+
+
+
+# Аналитика
+@router.get("/analytics/stats")
+def get_stats(db: Session = Depends(get_db)):
+    total_requests = db.query(models.Request).count()
+    completed_requests = db.query(models.Request).filter(models.Request.status == "completed").count()
+    pending_requests = db.query(models.Request).filter(models.Request.status == "pending").count()
+
+    return {
+        "total_requests": total_requests,
+        "completed_requests": completed_requests,
+        "pending_requests": pending_requests
+    }
+
+
+# Экстренная помощь
+
+@router.post("/emergency/report")
+def request_help(data: EmergencyRequestIn, db: Session = Depends(get_db)):
+    call = models.EmergencyCall(request_id=data.request_id, message=data.message)
+    db.add(call)
+    db.commit()
+    return {"message": "Emergency logged"}
+
+@router.get("/emergency/requests")
+def get_emergency_calls(db: Session = Depends(get_db)):
+    return db.query(models.EmergencyCall).all()
+
+
+from fastapi import Body
+
+@router.put("/user/update-username")
+def update_username(
+    new_username: str = Body(...),
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(get_current_user)
+):
+    current_user.username = new_username
+    db.commit()
+    db.refresh(current_user)
+    return {"message": "Username updated"}
+
+
+@router.get("/admin/employees", response_model=list[schemas.EmployeeOut])
+def get_all_employees(db: Session = Depends(get_db)):
+    return db.query(models.Employee).all()
+@router.post("/assistant/request-reassignment")
+def request_reassignment(request_id: int, reason: str, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
+    reassignment = models.ReassignmentRequest(request_id=request_id, reason=reason)
+    db.add(reassignment)
+    db.commit()
+    return {"message": "Reassignment requested"}
+
+@router.patch("/assistant/requests/{request_id}/status")
+def update_request_status(
+    request_id: int,
+    data: dict = Body(...),
+    db: Session = Depends(get_db)
+):
+    request = db.query(models.Request).filter(models.Request.id == request_id).first()
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    new_status = data.get("status")
+    if not new_status:
+        raise HTTPException(status_code=400, detail="Status is required")
+
+    request.status = new_status
+    db.commit()
+    return {"message": "Status updated"}
+
+
+from sqlalchemy import and_
+
+def find_eligible_employees(request, db: Session):
+    req_time = request.departure_time
+    day = req_time.strftime('%a').lower()
+
+    all_employees = db.query(models.Employee).all()
+    eligible = []
+
+    for emp in all_employees:
+        if day not in (emp.available_days or []):
+            continue
+        if request.passenger_type not in (emp.skills or []):
+            continue
+
+        same_day_requests = [
+            r for r in emp.requests if r.departure_time.date() == req_time.date()
+        ]
+        if len(same_day_requests) >= 5:
+            continue
+
+        if any(abs((r.departure_time - req_time).total_seconds()) < 7200 for r in same_day_requests):
+            continue
+
+        eligible.append(emp)
+
+    return eligible
+
+@router.get("/admin/eligible-employees/{request_id}")
+def get_eligible_employees(request_id: int, db: Session = Depends(get_db)):
+    request = db.query(models.Request).filter(models.Request.id == request_id).first()
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    employees = find_eligible_employees(request, db)
+    return [{"id": e.id, "name": e.name} for e in employees]

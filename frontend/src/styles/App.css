@@ -1,0 +1,180 @@
+/* Базовые стили */
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: Arial, sans-serif;
+}
+
+.app-header {
+  background-color: #2c3e50;
+  color: white;
+  padding: 1rem;
+  text-align: center;
+}
+
+.app-main {
+  flex: 1;
+  padding: 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Аутентификация */
+.auth-container {
+  display: flex;
+  gap: 2rem;
+  justify-content: center;
+  padding: 2rem 0;
+}
+
+/* Пользовательский интерфейс */
+.user-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.user-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+}
+
+/* Табы */
+.tabs {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+}
+
+.tab {
+  padding: 0.5rem 1rem;
+  background: #e0e0e0;
+  border: none;
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+}
+
+.tab.active {
+  background: #3498db;
+  color: white;
+}
+
+.tab-content {
+  padding: 1rem;
+  border: 1px solid #e0e0e0;
+  border-radius: 0 4px 4px 4px;
+}
+
+/* Формы */
+.content-section {
+  padding: 1rem;
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+/* Кнопки */
+.primary-btn {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.primary-btn:hover {
+  background-color: #2980b9;
+}
+
+.logout-btn {
+  background-color: #e74c3c;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+  .auth-container {
+    flex-direction: column;
+  }
+
+  .tabs {
+    flex-wrap: wrap;
+  }
+}
+
+/* Стили для форм аутентификации */
+.auth-form {
+  max-width: 400px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 0.5rem;
+  margin-bottom: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+.auth-form button {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.auth-form button:hover {
+  background-color: #2980b9;
+}
+
+.auth-form button:disabled {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+
+.auth-message {
+  margin: 1rem 0;
+  color: #e74c3c;
+}
+
+.auth-form a {
+  color: #3498db;
+  text-decoration: none;
+}
+
+.auth-form a:hover {
+  text-decoration: underline;
+}
