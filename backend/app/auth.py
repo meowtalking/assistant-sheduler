@@ -1,21 +1,18 @@
 from app.database import SessionLocal
 from app.models import User, Role, Employee, User
 from app.schemas import UserCreate, UserOut, Token, EmployeeCreate
-from app.security import hash_password, authenticate_user, create_access_token
-from fastapi.security import OAuth2PasswordRequestForm
+from app.security import create_access_token
 from app.dependencies import get_current_user
 from fastapi import APIRouter, HTTPException, Depends
 from passlib.context import CryptContext
 from sqlalchemy.orm import Session
 from . import models, schemas, database
-from jose import JWTError, jwt
-from datetime import datetime, timedelta
-
+from datetime import datetime
+from fastapi import Body
 from .algorithms import assign_employees
 from .models import Request
-from .schemas import EmployeeScheduleSchema, RequestOut, EmergencyRequestIn, ReassignRequestSchema
+from .schemas import EmployeeScheduleSchema, EmergencyRequestIn, ReassignRequestSchema
 from typing import List
-
 from sqlalchemy.orm import joinedload
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -87,18 +84,6 @@ def create_employee(
 
     return {"message": "Сотрудник успешно создан", "employee_id": new_employee.id}
 
-
-@router.post("/token", response_model=Token)
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(SessionLocal)):
-    user = authenticate_user(db, form_data.username, form_data.password)
-    if not user:
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-
-    access_token_expires = timedelta(minutes=30)
-    access_token = create_access_token(data={"sub": user.id}, expires_delta=access_token_expires)
-
-    return {"access_token": access_token, "token_type": "bearer"}
-
 # Функция для получения доступных сотрудников на указанное время
 def get_available_employees(departure_time: datetime, db: Session) -> List[models.Employee]:
     employees = db.query(models.Employee).filter(
@@ -132,7 +117,6 @@ def create_request(request: schemas.RequestCreate, db: Session = Depends(get_db)
         "assigned_employee_names": [e.name for e in db_request.assigned_employees]
     }
 
-
 @router.get("/requests", response_model=List[schemas.RequestOut])
 def get_upcoming_requests(
     db: Session = Depends(get_db),
@@ -165,10 +149,7 @@ def get_schedule(db: Session = Depends(get_db)):
             "name": employee.name,
             "shift_time": f"{employee.shift_start} - {employee.shift_end}"  # Форматируем shift_time
         })
-
     return schedule
-
-from datetime import datetime  # Добавьте этот импорт в начале файла
 
 @router.get("/assistant/requests", response_model=List[schemas.RequestOut])
 def get_assistant_requests(
@@ -202,9 +183,7 @@ def get_assistant_requests(
             .order_by(Request.departure_time.asc())  # Сортировка по дате
             .all()
         )
-
         return requests
-
     except Exception as e:
         print(f"ERROR: {str(e)}")
         raise HTTPException(status_code=500, detail="Internal error")
@@ -213,20 +192,15 @@ def get_assistant_requests(
 def get_stations(db: Session = Depends(get_db)):
     return db.query(models.Station).all()
 
-
 @router.get("/disruptions", response_model=List[schemas.DisruptionOut])
 def get_disruptions(db: Session = Depends(get_db)):
     disruptions = db.query(models.Disruption).options(joinedload(models.Disruption.station)).all()
     return disruptions
 
-
-# Все заявки (для администратора)
 @router.get("/admin/requests", response_model=List[schemas.RequestOut])
 def get_all_requests(db: Session = Depends(get_db)):
     return db.query(models.Request).all()
 
-
-# Переназначение заявки
 @router.post("/admin/reassign")
 def reassign_request(
     data: ReassignRequestSchema,
@@ -244,9 +218,6 @@ def reassign_request(
     db.commit()
     return {"message": "Request reassigned successfully"}
 
-
-
-# Аналитика
 @router.get("/analytics/stats")
 def get_stats(db: Session = Depends(get_db)):
     total_requests = db.query(models.Request).count()
@@ -259,9 +230,6 @@ def get_stats(db: Session = Depends(get_db)):
         "pending_requests": pending_requests
     }
 
-
-# Экстренная помощь
-
 @router.post("/emergency/report")
 def request_help(data: EmergencyRequestIn, db: Session = Depends(get_db)):
     call = models.EmergencyCall(request_id=data.request_id, message=data.message)
@@ -272,9 +240,6 @@ def request_help(data: EmergencyRequestIn, db: Session = Depends(get_db)):
 @router.get("/emergency/requests")
 def get_emergency_calls(db: Session = Depends(get_db)):
     return db.query(models.EmergencyCall).all()
-
-
-from fastapi import Body
 
 @router.put("/user/update-username")
 def update_username(
@@ -287,16 +252,9 @@ def update_username(
     db.refresh(current_user)
     return {"message": "Username updated"}
 
-
 @router.get("/admin/employees", response_model=list[schemas.EmployeeOut])
 def get_all_employees(db: Session = Depends(get_db)):
     return db.query(models.Employee).all()
-@router.post("/assistant/request-reassignment")
-def request_reassignment(request_id: int, reason: str, db: Session = Depends(get_db), current_user: models.User = Depends(get_current_user)):
-    reassignment = models.ReassignmentRequest(request_id=request_id, reason=reason)
-    db.add(reassignment)
-    db.commit()
-    return {"message": "Reassignment requested"}
 
 @router.patch("/assistant/requests/{request_id}/status")
 def update_request_status(
@@ -315,41 +273,3 @@ def update_request_status(
     request.status = new_status
     db.commit()
     return {"message": "Status updated"}
-
-
-from sqlalchemy import and_
-
-def find_eligible_employees(request, db: Session):
-    req_time = request.departure_time
-    day = req_time.strftime('%a').lower()
-
-    all_employees = db.query(models.Employee).all()
-    eligible = []
-
-    for emp in all_employees:
-        if day not in (emp.available_days or []):
-            continue
-        if request.passenger_type not in (emp.skills or []):
-            continue
-
-        same_day_requests = [
-            r for r in emp.requests if r.departure_time.date() == req_time.date()
-        ]
-        if len(same_day_requests) >= 5:
-            continue
-
-        if any(abs((r.departure_time - req_time).total_seconds()) < 7200 for r in same_day_requests):
-            continue
-
-        eligible.append(emp)
-
-    return eligible
-
-@router.get("/admin/eligible-employees/{request_id}")
-def get_eligible_employees(request_id: int, db: Session = Depends(get_db)):
-    request = db.query(models.Request).filter(models.Request.id == request_id).first()
-    if not request:
-        raise HTTPException(status_code=404, detail="Request not found")
-
-    employees = find_eligible_employees(request, db)
-    return [{"id": e.id, "name": e.name} for e in employees]
