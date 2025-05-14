@@ -1,14 +1,12 @@
 from fastapi import Depends, HTTPException
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
+from sqlalchemy.orm import Session
 from .models import User
 from .database import SessionLocal
-from sqlalchemy.orm import Session
+from .security import SECRET_KEY, ALGORITHM
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
-
-SECRET_KEY = "your_secret_key"
-ALGORITHM = "HS256"
 
 def get_db():
     db = SessionLocal()
@@ -16,7 +14,6 @@ def get_db():
         yield db
     finally:
         db.close()
-
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)):
     print(f"[DEBUG] Incoming token: {token}")
@@ -58,6 +55,7 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
 
     return user
 
-
-
-
+def is_admin(current_user: User = Depends(get_current_user)):
+    if current_user.role.name != "admin":
+        raise HTTPException(status_code=403, detail="Not enough permissions")
+    return current_user

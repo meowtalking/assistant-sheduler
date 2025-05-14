@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from collections import defaultdict
 from typing import List
-from app.models import Request, Employee
+from .models import Request, Employee
 
 MAX_REQUESTS_PER_DAY = 5
 TIME_BUFFER = timedelta(hours=2)

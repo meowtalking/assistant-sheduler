@@ -70,6 +70,7 @@ function App() {
       { id: 'messages', label: 'Сообщения', component: <EmergencyMessages /> }
     ] : [
       { id: 'new-request', label: 'Новая заявка', component: <RequestForm userId={user?.user_id} /> },
+      { id: 'emergency', label: 'Экстренные случаи', component: <EmergencyPanel /> },
       { id: 'my-requests', label: 'Мои заявки', component: <RequestList />}
     ];
 

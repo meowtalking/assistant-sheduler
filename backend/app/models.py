@@ -1,9 +1,7 @@
 import enum
-from datetime import datetime, time
-
+from datetime import datetime
 import pymysql
 pymysql.install_as_MySQLdb()
-
 from sqlalchemy import (
     create_engine, Column, Integer, String, Boolean, DateTime, Time,
     ForeignKey, Enum, Text, JSON, Table

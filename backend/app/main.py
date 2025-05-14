@@ -1,8 +1,8 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
-from . import models, database, auth
+from . import models, database, routes
 app = FastAPI()
-app.include_router(auth.router)
+app.include_router(routes.router)
 models.Base.metadata.create_all(bind=database.engine)
 app.add_middleware(
     CORSMiddleware,

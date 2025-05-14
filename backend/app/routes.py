@@ -1,25 +1,17 @@
-from app.database import SessionLocal
-from app.models import User, Role, Employee, User
-from app.schemas import UserCreate, UserOut, Token, EmployeeCreate
-from app.security import create_access_token
-from app.dependencies import get_current_user
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Body
 from passlib.context import CryptContext
-from sqlalchemy.orm import Session
-from . import models, schemas, database
-from datetime import datetime
-from fastapi import Body
-from .algorithms import assign_employees
-from .models import Request
-from .schemas import EmployeeScheduleSchema, EmergencyRequestIn, ReassignRequestSchema
+from sqlalchemy.orm import Session, joinedload
 from typing import List
-from sqlalchemy.orm import joinedload
+from datetime import datetime
+from . import models, schemas, database
+from .algorithms import assign_employees
+from .models import Employee, User, Request
+from .schemas import EmployeeCreate, EmployeeScheduleSchema, EmergencyRequestIn, ReassignRequestSchema
+from .security import create_access_token
+from .deps import get_current_user
+
 router = APIRouter()
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-SECRET_KEY = "your_secret_key"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60
 
 def get_db():
     db = database.SessionLocal()
@@ -33,7 +25,6 @@ def verify_password(plain, hashed):
 
 def get_password_hash(password):
     return pwd_context.hash(password)
-
 
 @router.post("/register")
 def register(user: schemas.UserCreate, db: Session = Depends(get_db)):
